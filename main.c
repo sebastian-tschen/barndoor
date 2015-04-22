@@ -13,8 +13,10 @@
 
 #include "system.h"        /* System funct/params, like osc/peripheral config */
 #include "user.h"          /* User funct/params, such as InitApp */
+#include "interrupts.h"
 
 #define _XTAL_FREQ 8000000
+
 
 
 /******************************************************************************/
@@ -31,7 +33,8 @@
 int newLow;
 int newHigh;
 int newRD1Value = 0;
-int motorRunning = false;
+bool motorRunning = false;
+bool fastMode = false;
 
 bool newTimerCompareValue = false;
 unsigned short newIntermediateCompareValue = 0;
@@ -41,31 +44,19 @@ unsigned long newIntermediateAdditionalStepFraction = 0;
 int FastForwardSpeed = 55;
 int debounceCounter = 21;
 
-void setNewTimerCompareValue(unsigned short pNewValue) {
-
-    //wait for new value to be set by interrupt
-    while (newTimerCompareValue) {
-
-    }
-    newIntermediateCompareValue = pNewValue;
-    newTimerCompareValue = true;
-
-
-}
 
 void stopMotor(void) {
 
-    if (motorRunning) {
         newTimerCompareValue = false;
         TMR1ON = false;
         RD3 = false;
         motorRunning = false;
-    }
 }
+
 
 void startMotor(void) {
 
-    if (!motorRunning) {
+    if (!motorRunning && checkEndSwitch()) {
         TMR1H = 0;
         TMR1L = 0;
         CCPR1 = newIntermediateCompareValue;
@@ -152,12 +143,20 @@ bool debounceRB4(void) {
 
 }
 
-void setMotorSpeed(unsigned short clocksPerStep, unsigned long additionalStepBase, unsigned long additionalStepFraction){
+void setMotorSpeed(unsigned short clocksPerStep, unsigned long additionalStepBase, unsigned long additionalStepFraction, bool direction){
   
+    
+    //wait for new value to be set by interrupt
+    while (newTimerCompareValue) {
+
+    }
+    
+    RC4=direction;
     newIntermediateCompareValue=clocksPerStep;
     newIntermediateAdditionalStepBase=additionalStepBase;
     newIntermediateAdditionalStepFraction=additionalStepFraction;
     
+    newTimerCompareValue = true;
 }
 
 void main(void) {
@@ -176,15 +175,33 @@ void main(void) {
         while (RB1 == true && RB2 == true && RB4 == true && RB5 == true) {
         }
 
+        //stop motor if any button is pressed in fast mode;
+        if (motorRunning && fastMode){
+            stopMotor();
+            if (!RB5){
+                debounceRB5();
+                while(!RB5){}
+                debounceRB5();
+            }
+            if (!RB1){
+                debounceRB1();
+                while(!RB1){}
+                debounceRB1();
+            }
+            if (!RB2){
+                debounceRB2();
+                while(!RB2){}
+                debounceRB2();
+            }
+        } 
         //        check which button was pressed
-        if (!RB5) {
-
+        else if (!RB5) {
             debounceRB5();
             if (motorRunning) {
                 stopMotor();
             } else {
-                RC4 = false;
-                setNewTimerCompareValue(355);
+                setMotorSpeed(355,0,0,FORWARD);
+                fastMode=false;
                 startMotor();
             }
             while (RB5 == false) {
@@ -197,21 +214,25 @@ void main(void) {
             if (!motorRunning) {
                 //fast forward
                 debounceRB1();
-                RC4 = false;
-                setNewTimerCompareValue(FastForwardSpeed);
+                setMotorSpeed(FastForwardSpeed,0,0,REVERSE);
+                fastMode=true;
                 startMotor();
                 while (RB1 == false) {
                 }
-                stopMotor();
+                debounceRB1;
             }
         } else if (!RB2) {
             if (!motorRunning) {
                 debounceRB2();
-                RC4 = true;
-                setNewTimerCompareValue(FastForwardSpeed);
+                setMotorSpeed(FastForwardSpeed,0,0,FORWARD);
+                fastMode=true;
                 startMotor();
                 while (RB2 == false) {
                 }
+                debounceRB2();
+            }
+        } else if (!RB4) {
+            if (!checkEndSwitch()){
                 stopMotor();
             }
         }

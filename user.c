@@ -30,12 +30,6 @@ void InitApp(void)
 //    TRISC2=false; 
     TRISC3=false; 
     TRISC4=false; 
-    TRISD0=false; 
-    TRISD1=false; 
-    TRISD2=false; 
-//    TRISD3=false; 
-    TRISD4=false; 
-    TRISD5=false; 
     
     
     
@@ -79,7 +73,7 @@ void InitApp(void)
     
     
     //set RC4 (direction)
-    RC4=1;
+//    RC4=1;
     
     
     //enable interrupt for compare event;

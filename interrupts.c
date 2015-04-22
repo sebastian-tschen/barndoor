@@ -11,6 +11,8 @@
 #include <stdint.h>         /* For uint8_t definition */
 #include <stdbool.h>        /* For true/false definition */
 
+#include "interrupts.h"
+
 /******************************************************************************/
 /* Interrupt Routines                                                         */
 /******************************************************************************/
@@ -20,8 +22,8 @@
  * _PIC12 */
 #ifndef _PIC12
 
-bool newToggleValue = true;
 
+bool newToggleValue = true;
 
 extern bool newTimerCompareValue;
 extern unsigned short newIntermediateCompareValue;
@@ -32,6 +34,10 @@ unsigned long additionalStepFraction;
 unsigned long additionalStepBase;
 
 unsigned long additionalStepCurrentValue;
+
+bool checkEndSwitch() {
+    return !(RC4 == REVERSE && !RB4);
+}
 
 void interrupt isr(void) {
     /* This code stub shows general interrupt handling.  Note that these
@@ -46,34 +52,36 @@ void interrupt isr(void) {
     if (CCP1IF) {
         CCP1IF = 0; /* Clear Interrupt Flag 1 */
         //make step
-        RC3 = true;
-        ;
-
-        //        calculate if additional fractional steps
-
+        if (checkEndSwitch()) {
+            RC3 = true;
+            //        calculate if additional fractional steps
 
 
-        //set new speed if there is one
-        if (newTimerCompareValue) {
-            CCPR1 = newIntermediateCompareValue;
-            additionalStepBase = newIntermediateAdditionalStepBase;
-            additionalStepFraction = newIntermediateAdditionalStepFraction;
-            additionalStepCurrentValue = 0;
-            newTimerCompareValue = false;
-        }
 
-        if (additionalStepBase != 0) {
-            additionalStepCurrentValue += additionalStepFraction;
-            if (additionalStepCurrentValue > additionalStepBase) {
-                CCPR1 = CCPR1 + 1;
-                additionalStepCurrentValue-=additionalStepBase;
+            //set new speed if there is one
+            if (newTimerCompareValue) {
+                CCPR1 = newIntermediateCompareValue;
+                additionalStepBase = newIntermediateAdditionalStepBase;
+                additionalStepFraction = newIntermediateAdditionalStepFraction;
+                additionalStepCurrentValue = 0;
+                newTimerCompareValue = false;
             }
+
+            if (additionalStepBase != 0) {
+                additionalStepCurrentValue += additionalStepFraction;
+                if (additionalStepCurrentValue > additionalStepBase) {
+                    CCPR1 = CCPR1 + 1;
+                    additionalStepCurrentValue -= additionalStepBase;
+                }
+            }
+            //activate Timer2 to lower flank
+            TMR2ON = 1;
+
+            //
+
+        }else{
+            newTimerCompareValue=false;
         }
-        //activate Timer2 to lower flank
-        TMR2ON = 1;
-
-        //
-
     }
 
     if (TMR2IF) {
