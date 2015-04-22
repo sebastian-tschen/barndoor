@@ -58,10 +58,11 @@ void InitApp(void)
     //TIMER2 setup
     
     //set 1010 = 1:11 Postscaler
+    //0100 = 1:5 Postscaler
     TOUTPS0=0;
-    TOUTPS1=1;
+    TOUTPS1=0;
     TOUTPS2=0;
-    TOUTPS3=1;
+    TOUTPS3=0;
     
     //set prescaler
     T2CKPS1=0;

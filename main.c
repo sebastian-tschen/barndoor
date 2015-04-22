@@ -37,13 +37,15 @@ bool newTimerCompareValue = false;
 int newIntermediateHighValue = 0;
 int newIntermediateLowValue = 0;
 
+int FastForwardSpeed = 55;
+int debounceCounter = 21;
+
 void setNewTimerCompareValue(int pNewLow, int pNewHigh) {
 
     //wait for new value to be set by interrupt
     while (newTimerCompareValue) {
 
     }
-
     newIntermediateHighValue = pNewHigh;
     newIntermediateLowValue = pNewLow;
 
@@ -54,28 +56,38 @@ void setNewTimerCompareValue(int pNewLow, int pNewHigh) {
 
 void stopMotor(void) {
 
-    TMR1ON = false;
-    RD3 = false;
-    motorRunning = false;
+    if (motorRunning) {
+        newTimerCompareValue = false;
+        TMR1ON = false;
+        RD3 = false;
+        motorRunning = false;
+    }
 }
 
 void startMotor(void) {
 
-    TMR1ON = true;
-    RD3 = true;
-    motorRunning = true;
+    if (!motorRunning) {
+        TMR1H = 0;
+        TMR1L = 0;
+        CCPR1H = newIntermediateHighValue;
+        CCPR1L = newIntermediateLowValue;
+        newTimerCompareValue = false;
+        TMR1ON = true;
+        RD3 = true;
+        motorRunning = true;
+    }
 }
 
-bool debounceRB2(void) {
+bool debounceRB5(void) {
 
-    int lastValue = RB2;
+    int lastValue = RB5;
     int counter = 0;
 
-    while (lastValue != RB2 || counter < 5) {
-        if (lastValue == RB2) {
+    while (lastValue != RB5 || counter < debounceCounter) {
+        if (lastValue == RB5) {
             counter++;
         } else {
-            lastValue = RB2;
+            lastValue = RB5;
             counter = 0;
         }
         __delay_ms(1);
@@ -90,7 +102,7 @@ bool debounceRB1(void) {
     int lastValue = RB1;
     int counter = 0;
 
-    while (lastValue != RB1 || counter < 5) {
+    while (lastValue != RB1 || counter < debounceCounter) {
         if (lastValue == RB1) {
             counter++;
         } else {
@@ -104,16 +116,35 @@ bool debounceRB1(void) {
 
 }
 
-bool debounceRB0(void) {
+bool debounceRB2(void) {
 
-    int lastValue = RB0;
+    int lastValue = RB2;
     int counter = 0;
 
-    while (lastValue != RB0 || counter < 5) {
-        if (lastValue == RB0) {
+    while (lastValue != RB2 || counter < debounceCounter) {
+        if (lastValue == RB2) {
             counter++;
         } else {
-            lastValue = RB0;
+            lastValue = RB2;
+            counter = 0;
+        }
+        __delay_ms(1);
+    }
+
+    return lastValue;
+
+}
+
+bool debounceRB4(void) {
+
+    int lastValue = RB4;
+    int counter = 0;
+
+    while (lastValue != RB4 || counter < debounceCounter) {
+        if (lastValue == RB4) {
+            counter++;
+        } else {
+            lastValue = RB4;
             counter = 0;
         }
         __delay_ms(1);
@@ -136,53 +167,64 @@ void main(void) {
     while (1) {
 
 
-        //        if (RB0==false){
-        //            RD0=true;
-        //        }else{
-        //            RD0=false;
-        //        }
-
-        while (RB0 == true) {//F && RB1 == true && RB2 == true) {
-            RD0 = RB0;
+        //wait for button to be pressed
+        while (RB1 == true && RB2 == true && RB4 == true && RB5 == true) {
             RD1 = RB1;
-            RD2 = RB2;
+            RD2 = RB3;
             RD4 = RB4;
             RD5 = RB5;
+
         }
 
-        //                RD3=false;
+        //        check which button was pressed
+        if (!RB5) {
 
-        //        if (RB1 == false) {
-        //
-        //            debounceRB1();
-        //            if (motorRunning == false) {
-        //                setNewTimerCompareValue(55, 0);
-        //                RC4 = true;
-        //                startMotor();
-        //            }
-        //            while (RB1 == false) {
-        //            }
-        //            stopMotor();
-        //        }else
-//        if (RB0 == false) {
-
-            debounceRB0();
-
-            while (RB0 == false) {
-
-            }
-            debounceRB0();
-
+            debounceRB5();
             if (motorRunning) {
                 stopMotor();
             } else {
-                
-                setNewTimerCompareValue(0x63, 1);
                 RC4 = false;
+                setNewTimerCompareValue(0x63, 1);
                 startMotor();
             }
-//        }
+            while (RB5 == false) {
+            }
+            debounceRB5();
 
+            //        }
+
+        } else if (!RB1) {
+
+            if (!motorRunning) {
+                //fast forward
+                debounceRB1();
+                RC4 = false;
+                setNewTimerCompareValue(FastForwardSpeed, 0);
+                startMotor();
+                while (RB1 == false) {
+
+                }
+                stopMotor();
+            }
+
+
+        } else if (!RB2) {
+
+
+            if (!motorRunning) {
+                debounceRB2();
+
+                RC4 = true;
+                setNewTimerCompareValue(FastForwardSpeed, 0);
+                startMotor();
+                while (RB2 == false) {
+
+                }
+                stopMotor();
+            }
+
+
+        }
 
     }
 }
