@@ -41,8 +41,8 @@ unsigned short newIntermediateCompareValue = 0;
 unsigned long newIntermediateAdditionalStepBase = 0;
 unsigned long newIntermediateAdditionalStepFraction = 0;
 
-int FastForwardSpeed = 55;
-int debounceCounter = 21;
+int FastForwardSpeed = 45;
+int debounceCounter = 20;
 
 
 void stopMotor(void) {
@@ -59,8 +59,8 @@ void startMotor(void) {
     if (!motorRunning && checkEndSwitch()) {
         TMR1H = 0;
         TMR1L = 0;
-        CCPR1 = newIntermediateCompareValue;
-        newTimerCompareValue = false;
+//        CCPR1 = newIntermediateCompareValue;
+//        newTimerCompareValue = false;
         TMR1ON = true;
         RD3 = true;
         motorRunning = true;
@@ -200,7 +200,9 @@ void main(void) {
             if (motorRunning) {
                 stopMotor();
             } else {
-                setMotorSpeed(355,0,0,FORWARD);
+//                setMotorSpeed(355,100000000,63893140,FORWARD);
+                setMotorSpeed(760,10000,6389,FORWARD);
+//                setMotorSpeed(355,0,0,FORWARD);
                 fastMode=false;
                 startMotor();
             }

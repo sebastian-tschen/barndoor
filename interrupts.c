@@ -33,6 +33,9 @@ extern unsigned long newIntermediateAdditionalStepFraction;
 unsigned long additionalStepFraction;
 unsigned long additionalStepBase;
 
+unsigned short origClocks;
+unsigned short longClocks;
+
 unsigned long additionalStepCurrentValue;
 
 bool checkEndSwitch() {
@@ -55,12 +58,12 @@ void interrupt isr(void) {
         if (checkEndSwitch()) {
             RC3 = true;
             //        calculate if additional fractional steps
-
-
-
             //set new speed if there is one
             if (newTimerCompareValue) {
-                CCPR1 = newIntermediateCompareValue;
+                origClocks=newIntermediateCompareValue;
+                longClocks=newIntermediateCompareValue+1;
+                CCPR1 = origClocks;
+                
                 additionalStepBase = newIntermediateAdditionalStepBase;
                 additionalStepFraction = newIntermediateAdditionalStepFraction;
                 additionalStepCurrentValue = 0;
@@ -70,8 +73,10 @@ void interrupt isr(void) {
             if (additionalStepBase != 0) {
                 additionalStepCurrentValue += additionalStepFraction;
                 if (additionalStepCurrentValue > additionalStepBase) {
-                    CCPR1 = CCPR1 + 1;
+                    CCPR1 = longClocks;
                     additionalStepCurrentValue -= additionalStepBase;
+                }else{
+                    CCPR1 = origClocks;
                 }
             }
             //activate Timer2 to lower flank
@@ -79,8 +84,6 @@ void interrupt isr(void) {
 
             //
 
-        }else{
-            newTimerCompareValue=false;
         }
     }
 
