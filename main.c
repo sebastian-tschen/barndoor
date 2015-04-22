@@ -34,21 +34,20 @@ int newRD1Value = 0;
 int motorRunning = false;
 
 bool newTimerCompareValue = false;
-int newIntermediateHighValue = 0;
-int newIntermediateLowValue = 0;
+unsigned short newIntermediateCompareValue = 0;
+unsigned long newIntermediateAdditionalStepBase = 0;
+unsigned long newIntermediateAdditionalStepFraction = 0;
 
 int FastForwardSpeed = 55;
 int debounceCounter = 21;
 
-void setNewTimerCompareValue(int pNewLow, int pNewHigh) {
+void setNewTimerCompareValue(unsigned short pNewValue) {
 
     //wait for new value to be set by interrupt
     while (newTimerCompareValue) {
 
     }
-    newIntermediateHighValue = pNewHigh;
-    newIntermediateLowValue = pNewLow;
-
+    newIntermediateCompareValue = pNewValue;
     newTimerCompareValue = true;
 
 
@@ -69,8 +68,7 @@ void startMotor(void) {
     if (!motorRunning) {
         TMR1H = 0;
         TMR1L = 0;
-        CCPR1H = newIntermediateHighValue;
-        CCPR1L = newIntermediateLowValue;
+        CCPR1 = newIntermediateCompareValue;
         newTimerCompareValue = false;
         TMR1ON = true;
         RD3 = true;
@@ -154,6 +152,14 @@ bool debounceRB4(void) {
 
 }
 
+void setMotorSpeed(unsigned short clocksPerStep, unsigned long additionalStepBase, unsigned long additionalStepFraction){
+  
+    newIntermediateCompareValue=clocksPerStep;
+    newIntermediateAdditionalStepBase=additionalStepBase;
+    newIntermediateAdditionalStepFraction=additionalStepFraction;
+    
+}
+
 void main(void) {
     /* Configure the oscillator for the device */
     ConfigureOscillator();
@@ -166,14 +172,8 @@ void main(void) {
     _delay(1000000);
     while (1) {
 
-
         //wait for button to be pressed
         while (RB1 == true && RB2 == true && RB4 == true && RB5 == true) {
-            RD1 = RB1;
-            RD2 = RB3;
-            RD4 = RB4;
-            RD5 = RB5;
-
         }
 
         //        check which button was pressed
@@ -184,7 +184,7 @@ void main(void) {
                 stopMotor();
             } else {
                 RC4 = false;
-                setNewTimerCompareValue(0x63, 1);
+                setNewTimerCompareValue(355);
                 startMotor();
             }
             while (RB5 == false) {
@@ -193,43 +193,28 @@ void main(void) {
 
             //        }
 
-        } else if (!RB1) {
-
+        } else if (!RB1) { 
             if (!motorRunning) {
                 //fast forward
                 debounceRB1();
                 RC4 = false;
-                setNewTimerCompareValue(FastForwardSpeed, 0);
+                setNewTimerCompareValue(FastForwardSpeed);
                 startMotor();
                 while (RB1 == false) {
-
                 }
                 stopMotor();
             }
-
-
         } else if (!RB2) {
-
-
             if (!motorRunning) {
                 debounceRB2();
-
                 RC4 = true;
-                setNewTimerCompareValue(FastForwardSpeed, 0);
+                setNewTimerCompareValue(FastForwardSpeed);
                 startMotor();
                 while (RB2 == false) {
-
                 }
                 stopMotor();
-                
-                //just some comment do make actual changes
             }
-            
-            
-
-
         }
-
     }
 }
 

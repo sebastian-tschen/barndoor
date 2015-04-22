@@ -24,8 +24,14 @@ bool newToggleValue = true;
 
 
 extern bool newTimerCompareValue;
-extern int newIntermediateHighValue;
-extern int newIntermediateLowValue;
+extern unsigned short newIntermediateCompareValue;
+extern unsigned long newIntermediateAdditionalStepBase;
+extern unsigned long newIntermediateAdditionalStepFraction;
+
+unsigned long additionalStepFraction;
+unsigned long additionalStepBase;
+
+unsigned long additionalStepCurrentValue;
 
 void interrupt isr(void) {
     /* This code stub shows general interrupt handling.  Note that these
@@ -39,27 +45,42 @@ void interrupt isr(void) {
     /* Determine which flag generated the interrupt */
     if (CCP1IF) {
         CCP1IF = 0; /* Clear Interrupt Flag 1 */
-        
         //make step
-        RC3 = true;;
-        
-        //activate Timer2 to lower flank in about 
-        TMR2ON=1;
-        
+        RC3 = true;
+        ;
+
+        //        calculate if additional fractional steps
+
+
+
+        //set new speed if there is one
         if (newTimerCompareValue) {
-            CCPR1H = newIntermediateHighValue;
-            CCPR1L = newIntermediateLowValue;
+            CCPR1 = newIntermediateCompareValue;
+            additionalStepBase = newIntermediateAdditionalStepBase;
+            additionalStepFraction = newIntermediateAdditionalStepFraction;
+            additionalStepCurrentValue = 0;
             newTimerCompareValue = false;
         }
+
+        if (additionalStepBase != 0) {
+            additionalStepCurrentValue += additionalStepFraction;
+            if (additionalStepCurrentValue > additionalStepBase) {
+                CCPR1 = CCPR1 + 1;
+                additionalStepCurrentValue-=additionalStepBase;
+            }
+        }
+        //activate Timer2 to lower flank
+        TMR2ON = 1;
+
+        //
+
     }
-    
-    if (TMR2IF){
-        
-        TMR2IF=0;
-        RC3=false;
-        TMR2ON=0;
-        TMR2=0;
-        
+
+    if (TMR2IF) {
+        TMR2IF = 0;
+        RC3 = false;
+        TMR2ON = 0;
+        TMR2 = 0;
     }
 
 
