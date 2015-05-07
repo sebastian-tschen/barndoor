@@ -9,8 +9,8 @@
 #define	INTERRUPTS_H
 
 
-#define FORWARD true
-#define REVERSE false
+#define FORWARD false
+#define REVERSE true
 
 
 bool checkEndSwitch();

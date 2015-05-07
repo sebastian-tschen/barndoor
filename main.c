@@ -10,6 +10,7 @@
 
 #include <stdint.h>        /* For uint8_t definition */
 #include <stdbool.h>       /* For true/false definition */
+#include <math.h>
 
 #include "system.h"        /* System funct/params, like osc/peripheral config */
 #include "user.h"          /* User funct/params, such as InitApp */
@@ -42,6 +43,11 @@ unsigned long newIntermediateAdditionalStepBase = 0;
 unsigned long newIntermediateAdditionalStepFraction = 0;
 
 int FastForwardSpeed = 45;
+
+double SEDIRISCH = 709.929669310441;
+double SOLAR = 711.873322419608;
+//double LUNAR = 
+
 int debounceCounter = 20;
 
 
@@ -159,6 +165,22 @@ void setMotorSpeed(unsigned short clocksPerStep, unsigned long additionalStepBas
     newTimerCompareValue = true;
 }
 
+void setMotorSpeedSimple(double clocksPerStep, bool direction){
+    
+    double integerPart, fractionalPart;
+    unsigned long base=100000000;
+    fractionalPart=modf(clocksPerStep,&integerPart);
+    unsigned long additionalStepFraction = (fractionalPart*base);
+    unsigned short integerPartShort = integerPart;
+    setMotorSpeed(integerPartShort,base,additionalStepFraction,direction);
+    
+}   
+
+void setMotorSpeedDouble(short clocksPerStep, bool direction){
+    setMotorSpeed(clocksPerStep,0,0,direction);
+}
+
+
 void main(void) {
     /* Configure the oscillator for the device */
     ConfigureOscillator();
@@ -200,9 +222,7 @@ void main(void) {
             if (motorRunning) {
                 stopMotor();
             } else {
-//                setMotorSpeed(355,100000000,63893140,FORWARD);
-                setMotorSpeed(760,10000,6389,FORWARD);
-//                setMotorSpeed(355,0,0,FORWARD);
+                setMotorSpeedDouble(SEDIRISCH,FORWARD);
                 fastMode=false;
                 startMotor();
             }
@@ -216,7 +236,7 @@ void main(void) {
             if (!motorRunning) {
                 //fast forward
                 debounceRB1();
-                setMotorSpeed(FastForwardSpeed,0,0,REVERSE);
+                setMotorSpeedSimple(FastForwardSpeed,REVERSE);
                 fastMode=true;
                 startMotor();
                 while (RB1 == false) {
@@ -226,7 +246,7 @@ void main(void) {
         } else if (!RB2) {
             if (!motorRunning) {
                 debounceRB2();
-                setMotorSpeed(FastForwardSpeed,0,0,FORWARD);
+                setMotorSpeedSimple(FastForwardSpeed,FORWARD);
                 fastMode=true;
                 startMotor();
                 while (RB2 == false) {
