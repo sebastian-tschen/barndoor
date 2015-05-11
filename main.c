@@ -42,9 +42,10 @@ unsigned short newIntermediateCompareValue = 0;
 unsigned long newIntermediateAdditionalStepBase = 0;
 unsigned long newIntermediateAdditionalStepFraction = 0;
 
-int FastForwardSpeed = 45;
+int FastForwardSpeed = 120;
 
 double SEDIRISCH = 709.929669310441;
+//double SEDIRISCH = 790.0;
 double SOLAR = 711.873322419608;
 //double LUNAR = 
 
